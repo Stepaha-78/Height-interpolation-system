@@ -7,3 +7,5 @@ You need to move this files to directory with exe files:
 - gdal.dll
 - tiff.dll
 - zlib.dll
+
+If you need .til files select the desired area and download it in geotiff format: https://portal.opentopography.org/datasets.
