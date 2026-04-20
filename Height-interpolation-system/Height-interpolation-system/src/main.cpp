@@ -1,68 +1,84 @@
 #include <iostream>
 #include <tiffio.h>
 
+using std::cout;
+using std::cin;
+using std::endl;
+
 int main()
 {
     setlocale(LC_ALL, "ru");
 
-    TIFF* tif = TIFFOpen("src/Amerika1.tif", "r");
-    if (!tif)
+    TIFF* image = TIFFOpen("src/AmerikaLake1.tif", "r");
+    if (!image)
     {
-        std::cerr << "Ошибка: Не удалось открыть файл Kavkaz1.tif!" << std::endl;
+        cout << "Файл не удалось открыть" << endl;
         return 1;
     }
 
-    uint32_t width, height;
-    uint16_t sampleFormat, bitsPerSample;
+    uint32_t imgWidth, imgHeight;
+    TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgHeight); 
+    TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &imgWidth);
+    cout << "Размер изображения: ";
+    cout << imgWidth << " x " << imgHeight << endl;
 
-    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
-    TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
-    TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
-    TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+    uint16_t typeFormat;
+    TIFFGetField(image, TIFFTAG_SAMPLEFORMAT, &typeFormat);
+    if (typeFormat == SAMPLEFORMAT_INT)
+        cout << "Формат высот int с знаками" << endl;
+    else if (typeFormat == SAMPLEFORMAT_UINT)
+        cout << "Формат unsigned int без знаков" << endl;
+    else
+        cout << "Формат float" << endl;
 
-    std::cout << "Разрешение: " << width << "x" << height << " пикселей" << std::endl;
-    std::cout << "Глубина: " << bitsPerSample << " бит" << std::endl;
+    uint16_t bitPerPixel;
+    if (TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitPerPixel))
+        cout << "Количество бит на пиксель фота: " << bitPerPixel << endl;
 
-    //Буфер для данных
-    int16_t* data = nullptr;
+    
+    void* buf = nullptr; //буфер хранения точек
 
-    if (TIFFIsTiled(tif))
+    if (TIFFIsTiled(image)) //Это плиточное хранение?
     {
-        std::cout << "Структура: Tiled" << std::endl;
+        cout << "Хранит данные в виде плиток." << endl;
+        
+        const tmsize_t bufSize = TIFFTileSize(image);
+        buf = _TIFFmalloc(bufSize);
+        TIFFReadEncodedTile(image, 0, buf, bufSize);
 
-        tmsize_t tileSize = TIFFTileSize(tif);
-        tdata_t tileBuf = _TIFFmalloc(tileSize);
+        cout << (image) << endl;
 
-        //Читаею самый первый тайл
-        if (TIFFReadEncodedTile(tif, 0, tileBuf, tileSize) > 0)
+        if (typeFormat == SAMPLEFORMAT_INT)
         {
-            data = (int16_t*)tileBuf;
-            std::cout << "Высота в точке (0,0): " << data[0] << " м." << std::endl;
-            std::cout << "Высота в точке (1,0): " << data[1] << " м." << std::endl;
-            std::cout << "Высота в точке (2,0): " << data[2] << " м." << std::endl;
+            int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
+            cout << dataPoints[0] << endl;
         }
-
-        _TIFFfree(tileBuf);
+        else if (typeFormat == SAMPLEFORMAT_UINT)
+        {
+            uint16_t* dataPoints = (uint16_t*)buf; //масив из 2 байтных без знаковых int размером 256х256
+            cout << dataPoints[0] << endl;
+        }
+        else if (typeFormat == SAMPLEFORMAT_IEEEFP)
+        {
+            float_t* dataPoints = (float_t*)buf; //масив из 4 байтных float размером 256х256
+            cout << dataPoints[0] << endl;
+        }
     }
     else
     {
-        std::cout << "Структура: Scanline" << std::endl;
+        cout << "Хранит данные в виде строк" << endl;
 
-        tmsize_t scanlineSize = TIFFScanlineSize(tif);
-        tdata_t scanlineBuf = _TIFFmalloc(scanlineSize);
-
-        // Читаем первую строку
-        if (TIFFReadScanline(tif, scanlineBuf, 0) > 0)
-        {
-            data = (int16_t*)scanlineBuf;
-            std::cout << "Высота в точке (0,0): " << data[0] << " м." << std::endl;
-        }
-
-        _TIFFfree(scanlineBuf);
+        const tmsize_t bufSize = TIFFScanlineSize(image);
+        buf = _TIFFmalloc(bufSize);
+        TIFFReadScanline(image, buf, 0); //1-ую строчку(нулевую)
     }
 
-    TIFFClose(tif);
 
-    std::cin.get();
+    if (buf)
+    {
+        _TIFFfree(buf);
+    }
+    
+    TIFFClose(image);
     return 0;
 }
