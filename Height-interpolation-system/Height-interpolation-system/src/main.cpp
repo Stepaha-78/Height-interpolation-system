@@ -22,11 +22,11 @@ int main()
     cout << "–азмер изображени€: ";
     cout << imgWidth << " x " << imgHeight << endl;
 
-    uint16_t format;
-    TIFFGetField(image, TIFFTAG_SAMPLEFORMAT, &format);
-    if (format == SAMPLEFORMAT_INT)
+    uint16_t typeFormat;
+    TIFFGetField(image, TIFFTAG_SAMPLEFORMAT, &typeFormat);
+    if (typeFormat == SAMPLEFORMAT_INT)
         cout << "‘ормат высот int с знаками" << endl;
-    else if (format == SAMPLEFORMAT_UINT)
+    else if (typeFormat == SAMPLEFORMAT_UINT)
         cout << "‘ормат unsigned int без знаков" << endl;
     else
         cout << "‘ормат float" << endl;
@@ -45,10 +45,24 @@ int main()
         const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
-        
-        int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
 
-        cout << dataPoints[30719] << endl;
+        cout << (image) << endl;
+
+        if (typeFormat == SAMPLEFORMAT_INT)
+        {
+            int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
+            cout << dataPoints[0] << endl;
+        }
+        else if (typeFormat == SAMPLEFORMAT_UINT)
+        {
+            uint16_t* dataPoints = (uint16_t*)buf; //масив из 2 байтных без знаковых int размером 256х256
+            cout << dataPoints[0] << endl;
+        }
+        else if (typeFormat == SAMPLEFORMAT_IEEEFP)
+        {
+            float_t* dataPoints = (float_t*)buf; //масив из 4 байтных float размером 256х256
+            cout << dataPoints[0] << endl;
+        }
     }
     else
     {
