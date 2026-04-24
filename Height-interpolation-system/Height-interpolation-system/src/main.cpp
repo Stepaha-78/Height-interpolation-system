@@ -1,5 +1,6 @@
 #include <iostream>
 #include <tiffio.h>
+#include "delaunator.hpp"
 
 using std::cout;
 using std::cin;
@@ -15,6 +16,7 @@ int main()
         cout << "‘айл не удалось открыть" << endl;
         return 1;
     }
+
 
     uint32_t imgWidth, imgHeight;
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgHeight); 
@@ -42,26 +44,33 @@ int main()
     {
         cout << "’ранит данные в виде плиток." << endl;
         
+        uint32_t numTiles = TIFFNumberOfTiles(image);
+        cout << " оличество плиток: " << numTiles << endl;
+
+        uint32_t tileW, tileH; //Ўирина и высота плиток
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW); 
+        TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
+        cout << "–азмер плитки" << tileW << " x " << tileH << endl;\
+
         const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
 
-        cout << (image) << endl;
-
+        
         if (typeFormat == SAMPLEFORMAT_INT)
         {
             int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
-            cout << dataPoints[0] << endl;
+            cout << dataPoints[0] << " метров" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_UINT)
         {
             uint16_t* dataPoints = (uint16_t*)buf; //масив из 2 байтных без знаковых int размером 256х256
-            cout << dataPoints[0] << endl;
+            cout << dataPoints[0] << " метров" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_IEEEFP)
         {
             float_t* dataPoints = (float_t*)buf; //масив из 4 байтных float размером 256х256
-            cout << dataPoints[0] << endl;
+            cout << dataPoints[0] << " метров" << endl;
         }
     }
     else
@@ -72,7 +81,7 @@ int main()
         buf = _TIFFmalloc(bufSize);
         TIFFReadScanline(image, buf, 0); //1-ую строчку(нулевую)
     }
-
+    
 
     if (buf)
     {
