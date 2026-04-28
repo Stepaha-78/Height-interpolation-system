@@ -19,7 +19,7 @@ int main()
 
 
     uint32_t imgWidth, imgHeight;
-    TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgHeight); 
+    TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgHeight);
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &imgWidth);
     cout << "Размер изображения: ";
     cout << imgWidth << " x " << imgHeight << endl;
@@ -37,26 +37,26 @@ int main()
     if (TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitPerPixel))
         cout << "Количество бит на пиксель фота: " << bitPerPixel << endl;
 
-    
+
     void* buf = nullptr; //буфер хранения точек
 
     if (TIFFIsTiled(image)) //Это плиточное хранение?
     {
         cout << "Хранит данные в виде плиток." << endl;
-        
+
         uint32_t numTiles = TIFFNumberOfTiles(image);
         cout << "Количество плиток: " << numTiles << endl;
 
         uint32_t tileW, tileH; //Ширина и высота плиток
-        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW); 
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
         cout << "Размер плитки" << tileW << " x " << tileH << endl;\
 
-        const tmsize_t bufSize = TIFFTileSize(image);
+            const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
 
-        
+
         if (typeFormat == SAMPLEFORMAT_INT)
         {
             int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
@@ -81,13 +81,13 @@ int main()
         buf = _TIFFmalloc(bufSize);
         TIFFReadScanline(image, buf, 0); //1-ую строчку(нулевую)
     }
-    
+
 
     if (buf)
     {
         _TIFFfree(buf);
     }
-    
+
     TIFFClose(image);
     return 0;
 }
