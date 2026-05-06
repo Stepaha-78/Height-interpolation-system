@@ -13,86 +13,86 @@ int main()
     TIFF* image = TIFFOpen("img/AmerikaLake1.tif", "r");
     if (!image)
     {
-        cout << "Ôàéë íå óäàëîñü îòêðûòü" << endl;
+        cout << "Ð¤Ð°Ð¹Ð» Ð½Ðµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚ÑŒ" << endl;
         return 1;
     }
     
-    //Ïîëó÷àåì øèðèíû è âûñîòó èçîáðàæåíèÿ
+    //ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ ÑˆÐ¸Ñ€Ð¸Ð½Ñ‹ Ð¸ Ð²Ñ‹ÑÐ¾Ñ‚Ñƒ Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ñ
     uint32_t imgW, imgH;
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgH);
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &imgW);
-    cout << "Ðàçìåð èçîáðàæåíèÿ: ";
+    cout << "Ð Ð°Ð·Ð¼ÐµÑ€ Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ñ: ";
     cout << imgW << " x " << imgH << endl;
 
-    //Âûâîä ôîðìàòà ïèêñåëÿ âûñîò
+    //Ð’Ñ‹Ð²Ð¾Ð´ Ñ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð° Ð¿Ð¸ÐºÑÐµÐ»Ñ Ð²Ñ‹ÑÐ¾Ñ‚
     uint16_t typeFormat; 
     TIFFGetField(image, TIFFTAG_SAMPLEFORMAT, &typeFormat);
     if (typeFormat == SAMPLEFORMAT_INT)
-        cout << "Ôîðìàò âûñîò int ñ çíàêàìè" << endl;
+        cout << "Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚ Ð²Ñ‹ÑÐ¾Ñ‚ int Ñ Ð·Ð½Ð°ÐºÐ°Ð¼Ð¸" << endl;
     else if (typeFormat == SAMPLEFORMAT_UINT)
-        cout << "Ôîðìàò unsigned int áåç çíàêîâ" << endl;
+        cout << "Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚ unsigned int Ð±ÐµÐ· Ð·Ð½Ð°ÐºÐ¾Ð²" << endl;
     else
-        cout << "Ôîðìàò float" << endl;
+        cout << "Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚ float" << endl;
 
-    //Êîëè÷åñòâî áèò íà ïèêñåëü
+    //ÐšÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð±Ð¸Ñ‚ Ð½Ð° Ð¿Ð¸ÐºÑÐµÐ»ÑŒ
     uint16_t bitPerPixel;
     if (TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitPerPixel))
-        cout << "Êîëè÷åñòâî áèò íà ïèêñåëü ôîòà: " << bitPerPixel << endl;
+        cout << "ÐšÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð±Ð¸Ñ‚ Ð½Ð° Ð¿Ð¸ÐºÑÐµÐ»ÑŒ Ñ„Ð¾Ñ‚Ð°: " << bitPerPixel << endl;
 
-    //áóôåð õðàíåíèÿ òî÷åê
+    //Ð±ÑƒÑ„ÐµÑ€ Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ñ Ñ‚Ð¾Ñ‡ÐµÐº
     void* buf = nullptr; 
 
-    //Äëÿ ïëèòî÷íîãî õðàíåíèÿ ïèêñåëåé
+    //Ð”Ð»Ñ Ð¿Ð»Ð¸Ñ‚Ð¾Ñ‡Ð½Ð¾Ð³Ð¾ Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ñ Ð¿Ð¸ÐºÑÐµÐ»ÐµÐ¹
     if (TIFFIsTiled(image)) 
     {
-        cout << "Èçîáðàæåíèå õðàíèò äàííûå â âèäå ïëèòîê." << endl;
+        cout << "Ð˜Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð² Ð²Ð¸Ð´Ðµ Ð¿Ð»Ð¸Ñ‚Ð¾Ðº." << endl;
         
-        //Êîëè÷åñòâî ïëèòîê íà èçîáðàæåíèè
+        //ÐšÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð¿Ð»Ð¸Ñ‚Ð¾Ðº Ð½Ð° Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ð¸
         uint32_t tileNum = TIFFNumberOfTiles(image);
-        cout << "Êîëè÷åñòâî ïëèòîê: " << tileNum << endl;
+        cout << "ÐšÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð¿Ð»Ð¸Ñ‚Ð¾Ðº: " << tileNum << endl;
 
-        //Øèðèíà è âûñîòà ïëèòîê
+        //Ð¨Ð¸Ñ€Ð¸Ð½Ð° Ð¸ Ð²Ñ‹ÑÐ¾Ñ‚Ð° Ð¿Ð»Ð¸Ñ‚Ð¾Ðº
         uint32_t tileW, tileH; 
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
-        cout << "Ðàçìåð ïëèòêè: " << tileW << " x " << tileH << endl;
+        cout << "Ð Ð°Ð·Ð¼ÐµÑ€ Ð¿Ð»Ð¸Ñ‚ÐºÐ¸: " << tileW << " x " << tileH << endl;
 
-        //Ñîçäàåì ðàçìåð áóôåðà è çàïîëíÿåì áóôåð çíà÷åíèÿìì 0 ïëèòêè
+        //Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð±ÑƒÑ„ÐµÑ€Ð° Ð¸ Ð·Ð°Ð¿Ð¾Ð»Ð½ÑÐµÐ¼ Ð±ÑƒÑ„ÐµÑ€ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸ÑÐ¼Ð¼ 0 Ð¿Ð»Ð¸Ñ‚ÐºÐ¸
         const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
 
-        //Ïåðåâîäèì äàííûå áóôåðà â ÷èñëà âûñîò ïîä èõ òèï õðàíåíèÿ
+        //ÐŸÐµÑ€ÐµÐ²Ð¾Ð´Ð¸Ð¼ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð±ÑƒÑ„ÐµÑ€Ð° Ð² Ñ‡Ð¸ÑÐ»Ð° Ð²Ñ‹ÑÐ¾Ñ‚ Ð¿Ð¾Ð´ Ð¸Ñ… Ñ‚Ð¸Ð¿ Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ñ
         if (typeFormat == SAMPLEFORMAT_INT)
         {
-            //ìàñèâ èç 2 áàéòíûõ int ðàçìåðîì 256õ256
+            //Ð¼Ð°ÑÐ¸Ð² Ð¸Ð· 2 Ð±Ð°Ð¹Ñ‚Ð½Ñ‹Ñ… int Ñ€Ð°Ð·Ð¼ÐµÑ€Ð¾Ð¼ 256Ñ…256
             int16_t* dataPoints = (int16_t*)buf;
-            cout << dataPoints[0] << " ìåòðîâ" << endl;
+            cout << dataPoints[0] << " Ð¼ÐµÑ‚Ñ€Ð¾Ð²" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_UINT)
         {
-            //ìàñèâ èç 2 áàéòíûõ áåç çíàêîâûõ int ðàçìåðîì 256õ256
+            //Ð¼Ð°ÑÐ¸Ð² Ð¸Ð· 2 Ð±Ð°Ð¹Ñ‚Ð½Ñ‹Ñ… Ð±ÐµÐ· Ð·Ð½Ð°ÐºÐ¾Ð²Ñ‹Ñ… int Ñ€Ð°Ð·Ð¼ÐµÑ€Ð¾Ð¼ 256Ñ…256
             uint16_t* dataPoints = (uint16_t*)buf;
-            cout << dataPoints[0] << " ìåòðîâ" << endl;
+            cout << dataPoints[0] << " Ð¼ÐµÑ‚Ñ€Ð¾Ð²" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_IEEEFP)
         {
-            //ìàñèâ èç 4 áàéòíûõ float ðàçìåðîì 256õ256
+            //Ð¼Ð°ÑÐ¸Ð² Ð¸Ð· 4 Ð±Ð°Ð¹Ñ‚Ð½Ñ‹Ñ… float Ñ€Ð°Ð·Ð¼ÐµÑ€Ð¾Ð¼ 256Ñ…256
             float_t* dataPoints = (float_t*)buf;
-            cout << dataPoints[0] << " ìåòðîâ" << endl;
+            cout << dataPoints[0] << " Ð¼ÐµÑ‚Ñ€Ð¾Ð²" << endl;
         }
     }
-    //Äëÿ ïîñòðî÷íîãî õðàíåíèÿ (óñòàðåâøåå)
+    //Ð”Ð»Ñ Ð¿Ð¾ÑÑ‚Ñ€Ð¾Ñ‡Ð½Ð¾Ð³Ð¾ Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ñ (ÑƒÑÑ‚Ð°Ñ€ÐµÐ²ÑˆÐµÐµ)
     else
     {
-        cout << "Õðàíèò äàííûå â âèäå ñòðîê" << endl;
+        cout << "Ð¥Ñ€Ð°Ð½Ð¸Ñ‚ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð² Ð²Ð¸Ð´Ðµ ÑÑ‚Ñ€Ð¾Ðº" << endl;
 
         const tmsize_t bufSize = TIFFScanlineSize(image);
         buf = _TIFFmalloc(bufSize);
-        TIFFReadScanline(image, buf, 0); //1-óþ ñòðî÷êó(íóëåâóþ)
+        TIFFReadScanline(image, buf, 0); //1-ÑƒÑŽ ÑÑ‚Ñ€Ð¾Ñ‡ÐºÑƒ(Ð½ÑƒÐ»ÐµÐ²ÑƒÑŽ)
     }
 
-    //Îò÷èùàåì áóôåð, åñëè îí íå ïóñòîé
+    //ÐžÑ‚Ñ‡Ð¸Ñ‰Ð°ÐµÐ¼ Ð±ÑƒÑ„ÐµÑ€, ÐµÑÐ»Ð¸ Ð¾Ð½ Ð½Ðµ Ð¿ÑƒÑÑ‚Ð¾Ð¹
     if (buf)
     {
         _TIFFfree(buf);
