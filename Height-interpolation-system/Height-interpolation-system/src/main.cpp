@@ -10,21 +10,22 @@ int main()
 {
     setlocale(LC_ALL, "ru");
 
-    TIFF* image = TIFFOpen("src/AmerikaLake1.tif", "r");
+    TIFF* image = TIFFOpen("img/AmerikaLake1.tif", "r");
     if (!image)
     {
         cout << "Файл не удалось открыть" << endl;
         return 1;
     }
-
-
-    uint32_t imgWidth, imgHeight;
-    TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgHeight);
-    TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &imgWidth);
+    
+    //Получаем ширины и высоту изображения
+    uint32_t imgW, imgH;
+    TIFFGetField(image, TIFFTAG_IMAGELENGTH, &imgH);
+    TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &imgW);
     cout << "Размер изображения: ";
-    cout << imgWidth << " x " << imgHeight << endl;
+    cout << imgW << " x " << imgH << endl;
 
-    uint16_t typeFormat;
+    //Вывод формата пикселя высот
+    uint16_t typeFormat; 
     TIFFGetField(image, TIFFTAG_SAMPLEFORMAT, &typeFormat);
     if (typeFormat == SAMPLEFORMAT_INT)
         cout << "Формат высот int с знаками" << endl;
@@ -33,46 +34,55 @@ int main()
     else
         cout << "Формат float" << endl;
 
+    //Количество бит на пиксель
     uint16_t bitPerPixel;
     if (TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitPerPixel))
         cout << "Количество бит на пиксель фота: " << bitPerPixel << endl;
 
+    //буфер хранения точек
+    void* buf = nullptr; 
 
-    void* buf = nullptr; //буфер хранения точек
-
-    if (TIFFIsTiled(image)) //Это плиточное хранение?
+    //Для плиточного хранения пикселей
+    if (TIFFIsTiled(image)) 
     {
-        cout << "Хранит данные в виде плиток." << endl;
+        cout << "Изображение хранит данные в виде плиток." << endl;
+        
+        //Количество плиток на изображении
+        uint32_t tileNum = TIFFNumberOfTiles(image);
+        cout << "Количество плиток: " << tileNum << endl;
 
-        uint32_t numTiles = TIFFNumberOfTiles(image);
-        cout << "Количество плиток: " << numTiles << endl;
-
-        uint32_t tileW, tileH; //Ширина и высота плиток
+        //Ширина и высота плиток
+        uint32_t tileW, tileH; 
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
-        cout << "Размер плитки" << tileW << " x " << tileH << endl;\
+        cout << "Размер плитки: " << tileW << " x " << tileH << endl;
 
-            const tmsize_t bufSize = TIFFTileSize(image);
+        //Создаем размер буфера и заполняем буфер значениямм 0 плитки
+        const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
 
-
+        //Переводим данные буфера в числа высот под их тип хранения
         if (typeFormat == SAMPLEFORMAT_INT)
         {
-            int16_t* dataPoints = (int16_t*)buf; //масив из 2 байтных int размером 256х256
+            //масив из 2 байтных int размером 256х256
+            int16_t* dataPoints = (int16_t*)buf;
             cout << dataPoints[0] << " метров" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_UINT)
         {
-            uint16_t* dataPoints = (uint16_t*)buf; //масив из 2 байтных без знаковых int размером 256х256
+            //масив из 2 байтных без знаковых int размером 256х256
+            uint16_t* dataPoints = (uint16_t*)buf;
             cout << dataPoints[0] << " метров" << endl;
         }
         else if (typeFormat == SAMPLEFORMAT_IEEEFP)
         {
-            float_t* dataPoints = (float_t*)buf; //масив из 4 байтных float размером 256х256
+            //масив из 4 байтных float размером 256х256
+            float_t* dataPoints = (float_t*)buf;
             cout << dataPoints[0] << " метров" << endl;
         }
     }
+    //Для построчного хранения (устаревшее)
     else
     {
         cout << "Хранит данные в виде строк" << endl;
@@ -82,7 +92,7 @@ int main()
         TIFFReadScanline(image, buf, 0); //1-ую строчку(нулевую)
     }
 
-
+    //Отчищаем буфер, если он не пустой
     if (buf)
     {
         _TIFFfree(buf);

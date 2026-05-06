@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <algorithm>
 #include <cmath>
 #include <exception>
