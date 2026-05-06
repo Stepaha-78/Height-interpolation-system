@@ -1,4 +1,11 @@
 #include <iostream>
+
+#ifdef _WIN32
+    #define NOMINMAX
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
+
 #include <tiffio.h>
 #include "delaunator.hpp"
 
@@ -8,7 +15,10 @@ using std::endl;
 
 int main()
 {
-    setlocale(LC_ALL, "ru");
+    #ifdef _WIN32
+        SetConsoleCP(65001);
+        SetConsoleOutputCP(65001);
+    #endif
 
     TIFF* image = TIFFOpen("img/AmerikaLake1.tif", "r");
     if (!image)
