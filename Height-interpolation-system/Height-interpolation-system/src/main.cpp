@@ -72,12 +72,18 @@ int main()
         buf = _TIFFmalloc(bufSize);
         TIFFReadEncodedTile(image, 0, buf, bufSize);
 
+        //Создаём массив для всех точек высот изображения
+        std::vector<float> allHeights(imgW * imgH, 0.0f);
+        cout << "Размер массива всех вершин: " << allHeights.size() << endl;
+        cout << "Вес массива: " << ((allHeights.size() * 4)/ (1024)) << " килобайт" << endl;
+            
         //Переводим данные буфера в числа высот под их тип хранения
         if (typeFormat == SAMPLEFORMAT_INT)
         {
             //масив из 2 байтных int размером 256х256
             int16_t* dataPoints = (int16_t*)buf;
             cout << dataPoints[0] << " метров" << endl;
+            allHeights[0] = dataPoints[0];
         }
         else if (typeFormat == SAMPLEFORMAT_UINT)
         {
@@ -91,6 +97,8 @@ int main()
             float_t* dataPoints = (float_t*)buf;
             cout << dataPoints[0] << " метров" << endl;
         }
+
+        cout << allHeights[0] << endl;
     }
     //Для построчного хранения (устаревшее)
     else

@@ -416,3 +416,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# My files lib
+!gdal.dll
+!tiff.dll
+!zlib.dll
