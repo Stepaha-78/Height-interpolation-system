@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #ifdef _WIN32
     #define NOMINMAX
@@ -12,6 +13,34 @@
 using std::cout;
 using std::cin;
 using std::endl;
+
+//Вывод значения в точке по индексу
+float getHeight(void* buf, const int& index, const uint16_t& typeFormat)
+{
+    //Переводим данные буфера в числа высот под их тип хранения
+    if (typeFormat == SAMPLEFORMAT_INT)
+    {
+        //Указатель на массив из 2 байтных int 
+        int16_t* tileHeights = (int16_t*)buf;
+        return tileHeights[index];
+    }
+    else if (typeFormat == SAMPLEFORMAT_UINT)
+    {
+        //Указатель на массив без знаковых 2 байтных int
+        uint16_t* tileHeights = (uint16_t*)buf;
+        return tileHeights[index];
+    }
+    else if (typeFormat == SAMPLEFORMAT_IEEEFP)
+    {
+        //Указатель на массив из float
+        float_t* tileHeights = (float_t*)buf;
+        return tileHeights[index];
+    }
+    else
+    {
+        return -1.0f;
+    }
+}
 
 int main()
 {
@@ -58,8 +87,8 @@ int main()
         cout << "Изображение хранит данные в виде плиток." << endl;
         
         //Количество плиток на изображении
-        uint32_t tileNum = TIFFNumberOfTiles(image);
-        cout << "Количество плиток: " << tileNum << endl;
+        uint32_t tileQuantity = TIFFNumberOfTiles(image);
+        cout << "Количество плиток: " << tileQuantity << endl;
 
         //Ширина и высота плиток
         uint32_t tileW, tileH; 
@@ -67,38 +96,85 @@ int main()
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
         cout << "Размер плитки: " << tileW << " x " << tileH << endl;
 
+        //Количество плиток в строке
+        uint16_t tilesInRow = (imgW + tileW - 1) / tileW;
+
         //Создаем размер буфера и заполняем буфер значениямм 0 плитки
         const tmsize_t bufSize = TIFFTileSize(image);
         buf = _TIFFmalloc(bufSize);
-        TIFFReadEncodedTile(image, 0, buf, bufSize);
 
         //Создаём массив для всех точек высот изображения
         std::vector<float> allHeights(imgW * imgH, 0.0f);
         cout << "Размер массива всех вершин: " << allHeights.size() << endl;
-        cout << "Вес массива: " << ((allHeights.size() * 4)/ (1024)) << " килобайт" << endl;
-            
-        //Переводим данные буфера в числа высот под их тип хранения
-        if (typeFormat == SAMPLEFORMAT_INT)
+        cout << "Вес массива: " << ((allHeights.size() * 4)/ (1024)) << " КБ" << endl;
+        
+        //Вектор из координат всех точек (0; 0) (0; 1) ...
+        std::vector<double> coords;
+        coords.reserve(imgH*imgW);
+
+        //Создаение и заполнение .obj файла
+        std::ofstream file("relief.obj");
+        if (!file.is_open())
         {
-            //масив из 2 байтных int размером 256х256
-            int16_t* dataPoints = (int16_t*)buf;
-            cout << dataPoints[0] << " метров" << endl;
-            allHeights[0] = dataPoints[0];
-        }
-        else if (typeFormat == SAMPLEFORMAT_UINT)
-        {
-            //масив из 2 байтных без знаковых int размером 256х256
-            uint16_t* dataPoints = (uint16_t*)buf;
-            cout << dataPoints[0] << " метров" << endl;
-        }
-        else if (typeFormat == SAMPLEFORMAT_IEEEFP)
-        {
-            //масив из 4 байтных float размером 256х256
-            float_t* dataPoints = (float_t*)buf;
-            cout << dataPoints[0] << " метров" << endl;
+            cout << "Файл не удалось открыть!" << endl;
+            return 1;
         }
 
-        cout << allHeights[0] << endl;
+        uint32_t pointsQuantityInTile = tileW * tileH; //Кол-во точек в плитке
+
+        cout << "[ВЫПОЛНЯЕТСЯ ПЕРЕНОС ВСЕХ ВЫСОТ В 1 ВЕКТОР И В ФАЙЛ OBJ...]" << endl;
+        //Перенос всех высот в массив allHeights
+        for (uint32_t tileNum = 0; tileNum < tileQuantity; tileNum++)
+        {
+            //Перенос значений высот в буфер tileNum плитки
+            TIFFReadEncodedTile(image, tileNum, buf, bufSize);
+
+            //Место текущей плитки в ряду и в столбике
+            uint16_t tileRow = tileNum / tilesInRow;
+            uint16_t tileCol = tileNum - tileRow * tilesInRow;
+            
+            //Перебор всех точек в плитке
+            for (uint32_t p = 0; p < pointsQuantityInTile; p++)
+            {
+                //Координаты точки внутри плитки по y и x
+                uint32_t ty = p / tileW;
+                uint32_t tx = p - ty*tileW;
+
+                //Глобальные координаты точки на карте
+                uint32_t globalX = tx + tileCol * tileW;
+                uint32_t globalY = ty + tileRow * tileH;
+
+                //Индекс чтобы добавить точку в вектор всех точек в нужное место
+                uint32_t indexInVector = globalY * imgW + globalX;
+                
+                //Проверка что глобальная точка не выходит за пределы изображения в пустые занечения плитки
+                if (globalX < imgW && globalY < imgH)
+                {
+                    allHeights[indexInVector] = getHeight(buf, p, typeFormat);
+
+                    coords.push_back(globalX);
+                    coords.push_back(globalY);
+
+                    file << "v " << globalX << " " << allHeights[indexInVector] << " " << globalY << "\n";
+                }
+            }
+        }
+        
+        cout << "[ВЫПОЛНЯЕТСЯ ПОДСЧЕТ ТРИАНГУЛЯЦИИ...]" << endl;
+        //Создаем объект для триангуляции и вектор со всеми треугольниками
+        delaunator::Delaunator trangulation(coords);
+        auto& trianglesVec = trangulation.triangles;
+        cout << "Размер вектора триангуляции: " << (trianglesVec.size()*8)/1024 << " КБ" << endl;
+
+        cout << "[ВЫПОЛНЯЕТСЯ ПЕРЕНОС ГРАНЕЙ В ТРИАНГУЛЯЦИИ В OBJ...]" << endl;
+        //Заполение файла obj гранями (треугольники)
+        for (int i = 0; i < trianglesVec.size() - 2; i += 3)
+            file << "f " << trianglesVec[i] + 1 << " " << trianglesVec[i + 1] + 1 << " " << trianglesVec[i + 2] + 1 << "\n";
+        
+        file.close();
+        auto min_h = std::min_element(allHeights.begin(), allHeights.end());
+        auto max_h = std::max_element(allHeights.begin(), allHeights.end());
+        cout << "МИН знач в масиве высот: " << *min_h << "| МАКС знач в масиве высот: " << *max_h << endl;
     }
     //Для построчного хранения (устаревшее)
     else
