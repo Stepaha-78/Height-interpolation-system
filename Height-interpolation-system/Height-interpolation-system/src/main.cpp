@@ -3,9 +3,9 @@
 #include <fstream>
 
 #ifdef _WIN32
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+    #define NOMINMAX
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
 #endif
 
 #include <tiffio.h>
@@ -23,6 +23,8 @@ private:
     uint32_t imgW, imgH;
     uint16_t typeFormat;
     uint16_t bitPerPixel;
+    //Ширина и высота плиток
+    uint32_t tileW, tileH;
 
     //Вывод значения в точке по индексу
     float getHeight(void* buf, const int& index)
@@ -85,9 +87,6 @@ public:
         if (!TIFFIsTiled(image))
             return false;
 
-
-        //Ширина и высота плиток
-        uint32_t tileW, tileH;
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileW);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileH);
         //Количество плиток в строке
@@ -145,11 +144,24 @@ public:
     {
         return imgH;
     }
-    uint16_t getFormat()
+    uint32_t getTileW()
     {
-        return typeFormat;
+        return tileW;
     }
-    uint16_t getBPP()
+    uint32_t getTileH()
+    {
+        return tileH;
+    }
+    void getFormat()
+    {
+        if (typeFormat == SAMPLEFORMAT_INT)
+            cout << "Формат хранения высоты: int16" << endl;
+        else if (typeFormat == SAMPLEFORMAT_UINT)
+            cout << "Формат хранения высоты: uint16" << endl;
+        else if (typeFormat == SAMPLEFORMAT_IEEEFP)
+            cout << "Формат хранения высоты: float32" << endl;
+    }
+    uint16_t getBitPerPixel()
     {
         return bitPerPixel;
     }
@@ -159,7 +171,7 @@ public:
 class Interpolator
 {
 public:
-    //Интерполяция по соседям
+    //Метод обратных расстояний
     static float idw(float x, float y, const std::vector<float>& heights, int imgW, int imgH)
     {
         //Находим соседей путём округления вниз и вверх
@@ -174,7 +186,7 @@ public:
         y0 = std::max(0, std::min(y0, imgH - 1));
         y1 = std::max(0, std::min(y1, imgH - 1));
 
-        //Ограничиваем координаты, чтобы не выйти за пределы изображения
+        //Считаем дистанцию от 4 соселей
         float d00 = sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0));
         float d10 = sqrt((x - x1) * (x - x1) + (y - y0) * (y - y0));
         float d01 = sqrt((x - x0) * (x - x0) + (y - y1) * (y - y1));
@@ -216,7 +228,7 @@ public:
         y0 = std::max(0, std::min(y0, imgH - 1));
         y1 = std::max(0, std::min(y1, imgH - 1));
 
-        //Положение внутри клетки
+        //Положение внутри клетки 1 на 1
         float fx = x - floor(x);
         float fy = y - floor(y);
 
@@ -270,6 +282,9 @@ public:
             return;
         }
 
+        tiff.getFormat();
+        cout << "Плитка " << tiff.getTileW() << " x " << tiff.getTileH() << endl << endl;
+
         getUserSettings();
         processAndSave(tiff.getW(), tiff.getH());
     }
@@ -282,8 +297,8 @@ private:
         while (!correct)
         {
             cout << "\nВведите вид интерполяции:"
-                "\n1. По соседям"
-                "\n2. Барицентральная"
+                "\n1. Метод обратных расстояний"
+                "\n2. Барицентральный"
                 "\n3. Без интерполяции"
                 "\nВведите целое число: ";
             cin >> interpolationChoice;
@@ -376,11 +391,11 @@ int main()
         SetConsoleCP(65001);
         SetConsoleOutputCP(65001);
     #endif
-
+    
     TerrainManager manager;
 
     std::string fileName;
-    cout << "Введите путь до файла относительно проекта(с расширением файла): ";
+    cout << "Введите путь до файла относительно проекта(с расширением файла .tif): ";
     cin >> fileName;
 
     manager.run(fileName);
